@@ -1,0 +1,531 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>Reelcut</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  /* Layout: one-screen phone editor. Preview on top, a scrub-by-scrolling timeline under it, a tool strip at the bottom. */
+  --bg:#0d0f14; --panel:#151821; --raise:#1d212c; --line:#2a2f3c; --fg:#eceff5; --dim:#8b93a5;
+  --accent:#ffc233; --accent-ink:#1a1400; --clip:#2c3a5a; --img:#3c3556; --txt:#6e5112; --aud:#1f4a4c; --danger:#ff7a7a;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Bengali","Noto Sans",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+#app{height:100%;display:flex;flex-direction:column;gap:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;min-width:0}
+.top{display:flex;align-items:center;gap:8px;flex:none}
+.brand{font-weight:800;letter-spacing:.02em;font-size:17px}
+.brand b{color:var(--accent)}
+.spacer{flex:1}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:0;background:var(--raise);display:grid;place-items:center}
+.icon-btn:disabled{opacity:.35}
+.primary{height:40px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:700}
+.stage{flex:1;min-height:0;position:relative;background:#000;border-radius:14px;display:grid;place-items:center;overflow:hidden}
+#cv{display:block;border-radius:2px;touch-action:auto}
+#empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+#empty h2{margin:0;font-size:18px}
+#empty p{margin:0;color:var(--dim);font-size:13px;max-width:30ch}
+.btn{height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--raise);font-weight:600}
+.btn.accent{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.danger{color:var(--danger)}
+.transport{display:flex;align-items:center;gap:10px;flex:none}
+#time{font:600 13px var(--mono);font-variant-numeric:tabular-nums;color:var(--dim)}
+#time b{color:var(--fg);font-weight:600}
+.tlwrap{position:relative;flex:none}
+#tl{position:relative;overflow-x:auto;overflow-y:hidden;background:var(--panel);border-radius:12px;height:156px;scrollbar-width:none;overscroll-behavior-x:contain}
+#tl::-webkit-scrollbar{display:none}
+#inner{position:relative;width:max-content;min-width:100%;padding-top:4px}
+#track{position:relative}
+#ruler{position:relative;height:18px}
+.tick{position:absolute;top:0;height:100%;border-left:1px solid var(--line);padding-left:3px;font:10px var(--mono);color:var(--dim);white-space:nowrap}
+.row{position:relative;margin-top:6px}
+.row.t{height:24px}.row.c{height:58px}.row.a{height:24px}
+#ph{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;z-index:6;border-radius:2px}
+#ph::before{content:"";position:absolute;top:-1px;left:-4px;border:5px solid transparent;border-top-color:var(--accent);border-bottom:0}
+.blk{position:absolute;top:0;height:100%;border-radius:8px;overflow:hidden;box-sizing:border-box;border:1px solid rgba(255,255,255,.14)}
+.blk.clip{background-color:var(--clip);background-repeat:repeat-x;background-size:auto 100%}
+.blk.clip.img{background-color:var(--img)}
+.blk.txt{background:var(--txt);border-color:rgba(255,194,51,.35)}
+.blk.aud{background:linear-gradient(90deg,transparent 0 3px,rgba(255,255,255,.18) 3px 4px) 0 0/6px 100%,var(--aud)}
+.blk.sel{outline:2px solid var(--accent);outline-offset:-2px;z-index:3}
+.lbl{position:absolute;left:5px;bottom:3px;font:600 10px var(--mono);background:rgba(0,0,0,.6);padding:1px 4px;border-radius:4px;color:#fff;white-space:nowrap;max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis}
+.blk.txt .lbl,.blk.aud .lbl{position:static;display:block;background:none;padding:4px 6px;font:600 11px var(--font);line-height:16px}
+.h{position:absolute;top:0;bottom:0;width:20px;display:none;background:var(--accent);touch-action:none;z-index:4}
+.h.l{left:0;border-radius:8px 0 0 8px}.h.r{right:0;border-radius:0 8px 8px 0}
+.h::after{content:"";position:absolute;left:50%;top:32%;bottom:32%;width:2px;margin-left:-1px;background:var(--accent-ink);opacity:.7;border-radius:2px}
+.sel .h{display:block}
+#sheet{flex:none;background:var(--panel);border-radius:14px;padding:12px;max-height:38%;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.sh-head{display:flex;align-items:center;gap:8px}
+.sh-head h3{margin:0;font-size:14px;flex:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>span.k{font-size:12px;color:var(--dim);display:flex;justify-content:space-between}
+.field output{font:600 12px var(--mono);color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+textarea{width:100%;box-sizing:border-box;min-height:56px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:600 16px var(--font);resize:none;user-select:text;-webkit-user-select:text}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--raise);font-size:13px;font-weight:600}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);padding:0}
+.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--bg) inset}
+.bar{height:10px;border-radius:999px;background:var(--raise);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent)}
+.note{font-size:12px;color:var(--dim);line-height:1.5;margin:0}
+.tools{display:flex;gap:2px;overflow-x:auto;flex:none;scrollbar-width:none;padding-bottom:2px}
+.tools::-webkit-scrollbar{display:none}
+.tool{flex:0 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;font-size:11px;padding:8px 6px;border-radius:12px;color:var(--fg)}
+.tool:active,.icon-btn:active{background:var(--line)}
+.tool.accent{color:var(--accent)}
+.tool.danger{color:var(--danger)}
+svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.i.f{fill:currentColor;stroke:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;z-index:50;max-width:88%;text-align:center;pointer-events:none}
+#hold{position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;overflow:hidden}
+video.res{width:100%;max-height:34vh;border-radius:10px;background:#000;user-select:auto}
+@media (prefers-reduced-motion:no-preference){.tool,.chip,.btn{transition:background .12s}}
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="brand">Reel<b>cut</b></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="undoBtn" aria-label="আনডু" disabled></button>
+    <button class="primary" id="exportBtn">এক্সপোর্ট</button>
+  </header>
+  <main class="stage" id="stage">
+    <canvas id="cv" width="960" height="540"></canvas>
+    <div id="empty">
+      <h2>প্রজেক্ট খালি</h2>
+      <p>ভিডিও বা ছবি যোগ করলেই এডিটিং শুরু। আগে একটু চালিয়ে দেখতে নমুনা নিন।</p>
+      <button class="btn accent" id="emptyAdd">+ মিডিয়া যোগ করুন</button>
+      <button class="btn" id="emptySample">নমুনা দিয়ে চেষ্টা করুন</button>
+    </div>
+  </main>
+  <div class="transport">
+    <button class="icon-btn" id="playBtn" aria-label="চালান"></button>
+    <div id="time"><b>0:00.0</b> / 0:00.0</div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="zoomOut" aria-label="ছোট করুন"></button>
+    <button class="icon-btn" id="zoomIn" aria-label="বড় করুন"></button>
+  </div>
+  <div class="tlwrap">
+    <div id="tl"><div id="inner"><div id="track">
+      <div id="ruler"></div>
+      <div class="row t" id="rowT"></div>
+      <div class="row c" id="rowC"></div>
+      <div class="row a" id="rowA"></div>
+    </div></div></div>
+    <div id="ph"></div>
+  </div>
+  <section id="sheet" hidden></section>
+  <nav class="tools" id="tools" aria-label="টুল"></nav>
+</div>
+<input type="file" id="fMedia" accept="video/*,image/*" multiple hidden>
+<input type="file" id="fMusic" accept="audio/*" hidden>
+<div id="hold"></div>
+<div id="toast" hidden></div>
+
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const el=(tag,props={},...kids)=>{const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(props||{})){
+    if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+    else if(v===true)e.setAttribute(k,'');else if(v!==false&&v!=null)e.setAttribute(k,v)}
+  for(const k of kids.flat())if(k!=null)e.append(k.nodeType?k:document.createTextNode(k));return e};
+const once=(t,ev,ms=20000)=>new Promise((res,rej)=>{const to=setTimeout(()=>rej(new Error('timeout')),ms);
+  t.addEventListener(ev,()=>{clearTimeout(to);res()},{once:true});
+  t.addEventListener('error',()=>{clearTimeout(to);rej(new Error('error'))},{once:true})});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- icons ---------- */
+const P={
+ plus:'M12 5v14M5 12h14',text:'M5 6h14M12 6v13M9 19h6',
+ music:'M9 18V6l10-2v12M9 18a2 2 0 11-4 0 2 2 0 014 0zM19 16a2 2 0 11-4 0 2 2 0 014 0z',
+ ratio:'M4 7h16v10H4z',split:'M12 3v18M7 8l-3 4 3 4M17 8l3 4-3 4',
+ speed:'M4 17a8 8 0 1116 0M12 17l4-5',vol:'M4 10v4h4l5 4V6L8 10H4zM16.5 9a4 4 0 010 6',
+ filter:'M9 5a5 5 0 100 10 5 5 0 000-10zM15 5a5 5 0 100 10 5 5 0 000-10zM12 10a5 5 0 100 10 5 5 0 000-10z',
+ rotate:'M4 12a8 8 0 108-8M4 4v5h5',fill:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+ copy:'M9 9h11v11H9zM15 9V5a1 1 0 00-1-1H5a1 1 0 00-1 1v9a1 1 0 001 1h4',
+ trash:'M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13',undo:'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3',
+ check:'M5 12l5 5 9-10',close:'M6 6l12 12M18 6L6 18',edit:'M4 20l4-1L19 8l-3-3L5 16zM14 7l3 3',
+ zin:'M11 5a6 6 0 100 12 6 6 0 000-12zM20 20l-4-4M9 11h4M11 9v4',zout:'M11 5a6 6 0 100 12 6 6 0 000-12zM20 20l-4-4M9 11h4'};
+const icon=(n,cls='')=>{const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','i '+cls);
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',P[n]||n);s.append(p);return s};
+const PLAY='M8 5v14l11-7z',PAUSE='M7 5h4v14H7zM13 5h4v14h-4z';
+
+/* ---------- state ---------- */
+const RATIOS={'16:9':[16,9],'9:16':[9,16],'1:1':[1,1],'4:5':[4,5]};
+const RES={'720':{short:720,br:6e6,label:'720p HD'},'1080':{short:1080,br:14e6,label:'1080p Full HD'},'4k':{short:2160,br:45e6,label:'4K Ultra HD'}};
+const FILTERS={none:['মূল',''],vivid:['উজ্জ্বল','saturate(1.5) contrast(1.1)'],warm:['উষ্ণ','sepia(.3) saturate(1.3) hue-rotate(-10deg)'],
+ cool:['শীতল','hue-rotate(12deg) saturate(1.1) brightness(1.05)'],bw:['সাদা-কালো','grayscale(1) contrast(1.1)'],
+ vintage:['ভিনটেজ','sepia(.6) contrast(.9) brightness(1.05)'],fade:['ফেড','contrast(.85) brightness(1.1) saturate(.8)'],
+ drama:['নাটকীয়','contrast(1.4) saturate(.9) brightness(.9)']};
+const COLORS=['#ffffff','#ffc233','#000000','#ff5a5f','#3ddc97','#4cc9f0','#b388ff'];
+const S={clips:[],texts:[],music:null,ratio:'16:9',t:0,total:0,playing:false,sel:null,kind:null,pps:80,res:'1080',fps:30,hist:[],exporting:false,exCtx:null,exW:0,exH:0};
+let uid=1;const nid=()=>uid++;
+const mediaList=[];
+let AC=null,activeClip=null,preseeked=null,progScroll=-999,histArmed=false,wake=null;
+
+const len=c=>(c.out-c.in)/c.speed;
+function layout(){let s=0;for(const c of S.clips){c.start=s;s+=len(c)}S.total=s;S.t=clamp(S.t,0,S.total)}
+function clipAt(t){if(!S.clips.length)return null;for(const c of S.clips){if(t>=c.start&&t<c.start+len(c))return c}return S.clips[S.clips.length-1]}
+const even=n=>Math.round(n/2)*2;
+function dimsShort(short,ratio){const[a,b]=RATIOS[ratio];const k=short/Math.min(a,b);return[even(a*k),even(b*k)]}
+const fmt=t=>{t=Math.max(0,t);const m=Math.floor(t/60);return m+':'+(t-m*60).toFixed(1).padStart(4,'0')}
+function ensureAC(){if(!AC){const C=window.AudioContext||window.webkitAudioContext;AC=new C()}return AC}
+
+let toastT=0;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- history ---------- */
+const snap=()=>({clips:S.clips.map(c=>({...c})),texts:S.texts.map(x=>({...x})),music:S.music?{...S.music}:null,ratio:S.ratio});
+function pushHist(){S.hist.push(snap());if(S.hist.length>60)S.hist.shift();$('#undoBtn').disabled=false}
+function touch(){if(!histArmed){pushHist();histArmed=true}}
+function undo(){if(S.exporting)return;const h=S.hist.pop();if(!h)return;
+  S.clips=h.clips;S.texts=h.texts;S.music=h.music;S.ratio=h.ratio;S.sel=null;S.kind=null;
+  $('#undoBtn').disabled=!S.hist.length;closeSheet();setupCanvas();full();toast('আনডু হয়েছে')}
+
+/* ---------- media loading ---------- */
+async function loadMedia(f){
+  const url=URL.createObjectURL(f);ensureAC();
+  if(f.type.startsWith('image/')){
+    const img=new Image();img.src=url;await img.decode();
+    const th=thumbOf(img,img.naturalWidth,img.naturalHeight);
+    const m={id:nid(),kind:'image',el:img,w:img.naturalWidth,h:img.naturalHeight,dur:120,thumb:th,name:f.name};mediaList.push(m);return m}
+  if(f.type.startsWith('video/')){
+    const v=el('video',{playsinline:true,preload:'auto'});v.src=url;$('#hold').append(v);
+    await once(v,'loadedmetadata');
+    if(!isFinite(v.duration)||!v.videoWidth)throw new Error('bad video');
+    v.currentTime=Math.min(.1,v.duration/2);await once(v,'seeked');
+    const th=thumbOf(v,v.videoWidth,v.videoHeight);
+    const src=AC.createMediaElementSource(v);const gain=AC.createGain();src.connect(gain);gain.connect(AC.destination);
+    const m={id:nid(),kind:'video',el:v,w:v.videoWidth,h:v.videoHeight,dur:v.duration,thumb:th,name:f.name,gain};mediaList.push(m);return m}
+  throw new Error('unsupported')}
+function thumbOf(src,w,h){const c=document.createElement('canvas');c.height=112;c.width=Math.max(8,Math.round(112*w/h));
+  c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.6)}
+function newClip(m,imgLen){return{id:nid(),m,in:0,out:m.kind==='image'?imgLen:m.dur,speed:1,vol:1,filter:'none',b:100,c:100,s:100,rot:0,fit:'contain',start:0}}
+async function addFiles(files,imgLen=4){
+  if(!files.length)return;const first=!S.clips.length;let n=0;pushHist();
+  toast('যোগ হচ্ছে…');
+  for(const f of files){try{const m=await loadMedia(f);S.clips.push(newClip(m,imgLen));n++;
+      if(first&&n===1){S.ratio=m.h>m.w*1.2?'9:16':(Math.abs(m.w-m.h)<m.w*.08?'1:1':'16:9');setupCanvas()}}
+    catch(e){toast('"'+f.name+'" চালানো যাচ্ছে না। অন্য ফরম্যাটে চেষ্টা করুন।')}}
+  if(!n){S.hist.pop();$('#undoBtn').disabled=!S.hist.length;return}
+  full();if(n)toast(n+'টি যোগ হয়েছে')}
+async function addSamples(){
+  const cols=[['#ff8a3d','#c2185b'],['#2b6cff','#00c2a8'],['#7b2ff7','#f107a3']];const files=[];
+  for(let i=0;i<3;i++){const c=document.createElement('canvas');c.width=1280;c.height=720;const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,1280,720);g.addColorStop(0,cols[i][0]);g.addColorStop(1,cols[i][1]);x.fillStyle=g;x.fillRect(0,0,1280,720);
+    x.fillStyle='rgba(255,255,255,.92)';x.font='700 150px system-ui,sans-serif';x.textAlign='center';x.fillText('Scene '+(i+1),640,400);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));files.push(new File([blob],'sample-'+(i+1)+'.png',{type:'image/png'}))}
+  await addFiles(files,3)}
+async function addMusic(f){
+  try{const url=URL.createObjectURL(f);const a=new Audio();a.preload='auto';a.src=url;await once(a,'loadedmetadata');ensureAC();
+    const src=AC.createMediaElementSource(a);const gain=AC.createGain();src.connect(gain);gain.connect(AC.destination);
+    pushHist();S.music={el:a,gain,dur:a.duration,name:f.name,vol:1};S.sel=S.music;S.kind='music';full();toast('মিউজিক যোগ হয়েছে')}
+  catch(e){toast('এই অডিও ফাইল চালানো যাচ্ছে না')}}
+
+/* ---------- drawing ---------- */
+const pcv=$('#cv'),pctx=pcv.getContext('2d',{alpha:false});
+function filterOf(c){if(c.filter==='none'&&c.b===100&&c.c===100&&c.s===100)return'none';
+  return(FILTERS[c.filter][1]+' brightness('+c.b+'%) contrast('+c.c+'%) saturate('+c.s+'%)').trim()}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);ctx.fill()}
+function drawText(ctx,x,W,H,box){
+  const fs=x.size/100*H;ctx.save();ctx.font=(x.bold?700:500)+' '+fs+'px system-ui,"Noto Sans Bengali",sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';const lines=x.text.split('\n'),lh=fs*1.2;
+  const y0=x.y*H-(lines.length-1)*lh/2,mw=Math.max(...lines.map(l=>ctx.measureText(l).width),1);
+  const bx=x.x*W-mw/2-fs*.4,by=y0-lh/2-fs*.1,bw=mw+fs*.8,bh=lines.length*lh+fs*.2;
+  if(x.bg){ctx.fillStyle='rgba(0,0,0,.6)';rr(ctx,bx,by,bw,bh,fs*.25)}
+  ctx.fillStyle=x.color;ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=fs*.12;
+  lines.forEach((l,i)=>ctx.fillText(l,x.x*W,y0+i*lh));
+  if(box){ctx.shadowBlur=0;ctx.setLineDash([8,5]);ctx.strokeStyle='#ffc233';ctx.lineWidth=Math.max(2,W/400);ctx.strokeRect(bx,by,bw,bh)}
+  ctx.restore()}
+function draw(ctx,W,H,t,ui){
+  ctx.save();ctx.filter='none';ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  const c=clipAt(t);
+  if(c){const m=c.m,src=m.el;
+    if(m.kind==='image'||src.readyState>=2){
+      const q=c.rot%180!==0,rw=q?m.h:m.w,rh=q?m.w:m.h;
+      const k=c.fit==='cover'?Math.max(W/rw,H/rh):Math.min(W/rw,H/rh);
+      ctx.translate(W/2,H/2);ctx.rotate(c.rot*Math.PI/180);ctx.filter=filterOf(c);
+      ctx.drawImage(src,-m.w*k/2,-m.h*k/2,m.w*k,m.h*k)}}
+  ctx.restore();
+  for(const x of S.texts)if(t>=x.start&&t<x.start+x.dur)drawText(ctx,x,W,H,ui&&S.sel===x)}
+
+/* ---------- media sync ---------- */
+function syncMedia(){
+  const c=clipAt(S.t),a=c&&c.m.kind==='video'?c.m:null;
+  for(const m of mediaList)if(m.kind==='video'&&m!==a&&!m.el.paused)m.el.pause();
+  if(a){const v=a.el,exp=c.in+(S.t-c.start)*c.speed,drift=Math.abs(v.currentTime-exp);
+    if(v.playbackRate!==c.speed)v.playbackRate=c.speed;
+    a.gain.gain.value=c.vol;
+    if(S.playing){
+      if(drift>.35||(activeClip!==c&&drift>.06))v.currentTime=exp;
+      if(v.paused)v.play().catch(()=>{});
+      const end=c.start+len(c),n=clipAt(end+.01);
+      if(n&&n!==c&&n.m.kind==='video'&&n.m!==a&&end-S.t<.7&&preseeked!==n.id){preseeked=n.id;n.m.el.currentTime=n.in}
+    }else{if(drift>.04)v.currentTime=exp;if(!v.paused)v.pause()}}
+  activeClip=c;
+  const mu=S.music;
+  if(mu){mu.gain.gain.value=mu.vol;
+    if(S.playing&&S.t<mu.dur){if(mu.el.paused){mu.el.currentTime=S.t;mu.el.play().catch(()=>{})}else if(Math.abs(mu.el.currentTime-S.t)>.35)mu.el.currentTime=S.t}
+    else if(!mu.el.paused)mu.el.pause()}}
+
+/* ---------- main loop ---------- */
+let last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  const dt=last?Math.min((ts-last)/1000,.1):0;last=ts;
+  if(S.playing){S.t+=dt;
+    if(S.t>=S.total){S.t=S.total;if(S.exporting)endExport();else{S.playing=false;updPlay()}}}
+  syncMedia();
+  draw(pctx,pcv.width,pcv.height,S.t,true);
+  if(S.exporting&&S.exCtx){draw(S.exCtx,S.exW,S.exH,S.t,false);
+    const p=S.total?S.t/S.total:0;const b=$('#expBar');if(b)b.style.width=(p*100).toFixed(1)+'%';const l=$('#expPct');if(l)l.textContent=Math.round(p*100)+'%'}
+  if(S.playing)setScroll(S.t*S.pps);
+  updTime()}
+function updTime(){const e=$('#time');const a=fmt(S.t),b=fmt(S.total);if(e._k!==a+b){e._k=a+b;e.innerHTML='<b>'+a+'</b> / '+b}}
+function setScroll(x){progScroll=x;$('#tl').scrollLeft=x}
+function updPlay(){const b=$('#playBtn');b.replaceChildren(icon(S.playing?PAUSE:PLAY,'f'));b.setAttribute('aria-label',S.playing?'থামান':'চালান')}
+async function togglePlay(){
+  if(S.exporting)return;if(!S.clips.length){toast('আগে মিডিয়া যোগ করুন');return}
+  ensureAC();try{await AC.resume()}catch(e){}
+  if(S.playing)S.playing=false;else{if(S.t>=S.total-.05)S.t=0;S.playing=true}
+  updPlay()}
+
+/* ---------- canvas fit ---------- */
+function setupCanvas(){const[a,b]=dimsShort(540,S.ratio);pcv.width=a;pcv.height=b;fit()}
+function fit(){const r=$('#stage').getBoundingClientRect();const ar=pcv.width/pcv.height;
+  let w=r.width-8,h=w/ar;if(h>r.height-8){h=r.height-8;w=h*ar}
+  pcv.style.width=Math.max(10,w)+'px';pcv.style.height=Math.max(10,h)+'px'}
+new ResizeObserver(fit).observe($('#stage'));
+
+/* ---------- timeline ---------- */
+const tl=$('#tl'),track=$('#track'),inner=$('#inner');
+const blks=new Map();
+function place(b,start,l){b.style.left=(start*S.pps)+'px';b.style.width=Math.max(18,l*S.pps-2)+'px'}
+function clipLabel(c){return fmt(len(c)).replace(/^0:/,'')+'s'+(c.speed!==1?' · '+c.speed+'x':'')}
+function renderTL(){
+  layout();blks.clear();
+  const pad=tl.clientWidth/2;inner.style.paddingLeft=inner.style.paddingRight=pad+'px';
+  track.style.width=Math.max(S.total*S.pps,1)+'px';
+  const ruler=$('#ruler'),rowT=$('#rowT'),rowC=$('#rowC'),rowA=$('#rowA');
+  ruler.replaceChildren();rowT.replaceChildren();rowC.replaceChildren();rowA.replaceChildren();
+  const step=S.pps>=120?.5:S.pps>=50?1:S.pps>=28?2:5;
+  for(let s=0;s<=S.total+.001;s+=step){const tk=el('div',{class:'tick'},Number.isInteger(s)?(Math.floor(s/60)+':'+String(s%60).padStart(2,'0')):'');tk.style.left=(s*S.pps)+'px';ruler.append(tk)}
+  for(const c of S.clips){
+    const b=el('div',{class:'blk clip'+(c.m.kind==='image'?' img':'')+(S.sel===c?' sel':''),onclick:e=>{e.stopPropagation();select(c,'clip')}},
+      el('i',{class:'h l',onpointerdown:e=>startTrim(e,c,'l')}),el('i',{class:'h r',onpointerdown:e=>startTrim(e,c,'r')}),el('span',{class:'lbl'},clipLabel(c)));
+    b.style.backgroundImage='url("'+c.m.thumb+'")';b._lbl=b.querySelector('.lbl');place(b,c.start,len(c));blks.set(c.id,b);rowC.append(b)}
+  for(const x of S.texts){
+    const b=el('div',{class:'blk txt'+(S.sel===x?' sel':''),onclick:e=>{e.stopPropagation();select(x,'text')}},el('span',{class:'lbl'},x.text.split('\n')[0]));
+    place(b,x.start,x.dur);blks.set('t'+x.id,b);rowT.append(b)}
+  if(S.music){const mu=S.music,b=el('div',{class:'blk aud'+(S.sel===mu?' sel':''),onclick:e=>{e.stopPropagation();select(mu,'music')}},el('span',{class:'lbl'},'♪ '+mu.name));
+    place(b,0,Math.min(mu.dur,Math.max(S.total,1)));blks.set('music',b);rowA.append(b)}
+  setScroll(S.t*S.pps)}
+function posTL(){
+  layout();track.style.width=Math.max(S.total*S.pps,1)+'px';
+  for(const c of S.clips){const b=blks.get(c.id);if(b){place(b,c.start,len(c));b._lbl.textContent=clipLabel(c)}}
+  for(const x of S.texts){const b=blks.get('t'+x.id);if(b){place(b,x.start,x.dur);b.querySelector('.lbl').textContent=x.text.split('\n')[0]}}
+  if(S.music){const b=blks.get('music');if(b)place(b,0,Math.min(S.music.dur,Math.max(S.total,1)))}}
+tl.addEventListener('scroll',()=>{
+  if(Math.abs(tl.scrollLeft-progScroll)<2||S.exporting)return;
+  S.t=clamp(tl.scrollLeft/S.pps,0,S.total)});
+tl.addEventListener('touchstart',()=>{if(S.playing&&!S.exporting){S.playing=false;updPlay()}},{passive:true});
+tl.addEventListener('pointerdown',()=>{if(S.playing&&!S.exporting){S.playing=false;updPlay()}});
+tl.addEventListener('click',e=>{if(S.sel&&!e.target.closest('.blk')){select(null,null)}});
+new ResizeObserver(()=>renderTL()).observe(tl);
+function zoom(f){S.pps=clamp(S.pps*f,16,420);renderTL()}
+
+function startTrim(e,c,side){
+  e.stopPropagation();e.preventDefault();pushHist();
+  const x0=e.clientX,in0=c.in,out0=c.out,h=e.currentTarget;h.setPointerCapture(e.pointerId);
+  const mv=ev=>{const d=(ev.clientX-x0)/S.pps*c.speed;
+    if(side==='l')c.in=clamp(in0+d,0,c.out-.2);else c.out=clamp(out0+d,c.in+.2,c.m.dur);
+    posTL()};
+  const up=()=>{h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);h.removeEventListener('pointercancel',up);
+    layout();setScroll(S.t*S.pps);activeClip=null};
+  h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up)}
+
+/* ---------- selection & toolbar ---------- */
+function select(o,kind){S.sel=o;S.kind=kind;histArmed=false;closeSheet(true);renderTL();renderTools();
+  pcv.style.touchAction=kind==='text'?'none':'auto';
+  if(kind==='text')openTextSheet()}
+function full(){layout();renderTL();renderTools();$('#empty').hidden=S.clips.length>0;updPlay();updTime()}
+function T(i,l,fn,cls=''){return el('button',{class:'tool '+cls,onclick:fn},icon(i),el('span',{},l))}
+function renderTools(){
+  const t=$('#tools');t.replaceChildren();
+  if(S.exporting)return;
+  if(S.kind==='clip'){
+    t.append(T('split','বিভক্ত',splitAt),T('speed','গতি',openSpeed),T('vol','ভলিউম',openVol),T('filter','ফিল্টার',openFilter),
+      T('rotate','ঘোরান',rotateClip),T('fill',S.sel.fit==='cover'?'ফিট':'ফিল',toggleFit),T('copy','কপি',dupClip),T('trash','মুছুন',delSel,'danger'),T('check','শেষ',()=>select(null,null),'accent'))
+  }else if(S.kind==='text'){
+    t.append(T('edit','এডিট',openTextSheet),T('copy','কপি',dupText),T('trash','মুছুন',delSel,'danger'),T('check','শেষ',()=>select(null,null),'accent'))
+  }else if(S.kind==='music'){
+    t.append(T('vol','ভলিউম',openVol),T('trash','মুছুন',delSel,'danger'),T('check','শেষ',()=>select(null,null),'accent'))
+  }else{
+    t.append(T('plus','মিডিয়া',()=>$('#fMedia').click(),'accent'),T('text','টেক্সট',addText),T('music','মিউজিক',()=>$('#fMusic').click()),
+      T('ratio','অনুপাত '+S.ratio,openRatio),T('split','বিভক্ত',splitAt))}}
+
+/* ---------- edit operations ---------- */
+function splitAt(){
+  const c=S.kind==='clip'?S.sel:clipAt(S.t);if(!c){toast('আগে মিডিয়া যোগ করুন');return}
+  const off=S.t-c.start;if(off<.15||off>len(c)-.15){toast('প্লেহেড ক্লিপের মাঝখানে নিন');return}
+  pushHist();const cut=c.in+off*c.speed,c2={...c,id:nid(),in:cut};c.out=cut;
+  S.clips.splice(S.clips.indexOf(c)+1,0,c2);S.sel=c2;S.kind='clip';layout();renderTL();renderTools();toast('ক্লিপ কাটা হয়েছে')}
+function dupClip(){pushHist();const c=S.sel,c2={...c,id:nid()};S.clips.splice(S.clips.indexOf(c)+1,0,c2);S.sel=c2;full()}
+function dupText(){pushHist();const x=S.sel,x2={...x,id:nid(),start:Math.min(x.start+.5,Math.max(0,S.total-x.dur)),y:Math.min(.9,x.y+.08)};S.texts.push(x2);S.sel=x2;full();openTextSheet()}
+function delSel(){
+  pushHist();const o=S.sel;
+  if(S.kind==='clip')S.clips.splice(S.clips.indexOf(o),1);
+  else if(S.kind==='text')S.texts.splice(S.texts.indexOf(o),1);
+  else if(S.kind==='music'){o.el.pause();S.music=null}
+  S.sel=null;S.kind=null;closeSheet(true);pcv.style.touchAction='auto';full()}
+function rotateClip(){pushHist();S.sel.rot=(S.sel.rot+90)%360;renderTools()}
+function toggleFit(){pushHist();S.sel.fit=S.sel.fit==='cover'?'contain':'cover';renderTools();toast(S.sel.fit==='cover'?'স্ক্রিন ভরে দেখাচ্ছে':'পুরো ফ্রেম দেখাচ্ছে')}
+function addText(){
+  if(!S.clips.length){toast('আগে মিডিয়া যোগ করুন');return}
+  pushHist();const x={id:nid(),text:'আপনার টেক্সট',start:clamp(S.t,0,Math.max(0,S.total-.5)),dur:Math.min(3,Math.max(.5,S.total-S.t)),x:.5,y:.5,size:9,color:'#ffffff',bold:true,bg:false};
+  S.texts.push(x);select(x,'text')}
+
+/* ---------- sheets ---------- */
+const sheet=$('#sheet');
+function closeSheet(silent){sheet.hidden=true;sheet.replaceChildren();if(!silent)fit()}
+function openSheet(title,...content){
+  sheet.replaceChildren(el('div',{class:'sh-head'},el('h3',{},title),el('button',{class:'icon-btn',onclick:()=>{closeSheet()},'aria-label':'বন্ধ'},icon('check'))),...content);
+  sheet.hidden=false;sheet.scrollTop=0;histArmed=false;fit()}
+let sid=0;
+function slider(label,min,max,step,val,show,on){
+  const id='sl'+(++sid),out=el('output',{},show(val)),inp=el('input',{type:'range',id,min,max,step});inp.value=val;
+  inp.addEventListener('input',()=>{touch();const v=+inp.value;out.textContent=show(v);on(v)});
+  return el('div',{class:'field'},el('label',{for:id},el('span',{},label),out),inp)}
+function chips(items,cur,pick){
+  const box=el('div',{class:'chips'});
+  const draw=()=>{box.replaceChildren(...items.map(([k,l])=>el('button',{class:'chip'+(k===cur?' on':''),onclick:()=>{cur=k;pick(k);draw()}},l)))};draw();return box}
+
+function openSpeed(){const c=S.sel;if(c.m.kind==='image'){toast('ছবির ক্ষেত্রে গতি নেই, ক্লিপের প্রান্ত টেনে সময় ঠিক করুন');return}
+  openSheet('গতি',slider('গতি',.25,4,.05,c.speed,v=>v.toFixed(2)+'x',v=>{c.speed=v;posTL()}),
+    chips([[.5,'0.5x'],[1,'1x'],[1.5,'1.5x'],[2,'2x'],[3,'3x']],-1,v=>{touch();c.speed=v;posTL();openSpeed()}))}
+function openVol(){const o=S.sel;if(S.kind==='clip'&&o.m.kind==='image'){toast('ছবিতে শব্দ নেই');return}
+  openSheet(S.kind==='music'?'মিউজিক ভলিউম':'ক্লিপ ভলিউম',slider('ভলিউম',0,200,5,Math.round(o.vol*100),v=>v+'%',v=>{o.vol=v/100}),
+    chips([[0,'মিউট'],[100,'১০০%'],[150,'১৫০%']],-1,v=>{touch();o.vol=v/100;openVol()}))}
+function openFilter(){const c=S.sel;
+  openSheet('ফিল্টার ও রঙ',chips(Object.entries(FILTERS).map(([k,v])=>[k,v[0]]),c.filter,k=>{touch();c.filter=k}),
+    slider('উজ্জ্বলতা',50,150,1,c.b,v=>v+'%',v=>c.b=v),slider('কনট্রাস্ট',50,150,1,c.c,v=>v+'%',v=>c.c=v),slider('স্যাচুরেশন',0,200,1,c.s,v=>v+'%',v=>c.s=v))}
+function openRatio(){
+  openSheet('ভিডিওর অনুপাত',chips([['16:9','16:9 ইউটিউব'],['9:16','9:16 রিলস'],['1:1','1:1 স্কয়ার'],['4:5','4:5 পোর্ট্রেট']],S.ratio,k=>{pushHist();S.ratio=k;setupCanvas();renderTools()}),
+    el('p',{class:'note'},'ক্লিপ ফ্রেমে না ভরলে ক্লিপ বেছে "ফিল" চাপুন, অথবা "ঘোরান" দিয়ে সোজা করুন।'))}
+function openTextSheet(){const x=S.sel;if(!x||S.kind!=='text')return;
+  const ta=el('textarea',{id:'txIn',rows:2,'aria-label':'টেক্সট'});ta.value=x.text;
+  ta.addEventListener('input',()=>{touch();x.text=ta.value||' ';posTL()});
+  const sw=el('div',{class:'chips'});
+  const dsw=()=>sw.replaceChildren(...COLORS.map(c=>{const b=el('button',{class:'sw'+(x.color===c?' on':''),'aria-label':c,onclick:()=>{touch();x.color=c;dsw()}});b.style.background=c;return b}));dsw();
+  const tg=el('div',{class:'chips'});
+  const dtg=()=>tg.replaceChildren(el('button',{class:'chip'+(x.bold?' on':''),onclick:()=>{touch();x.bold=!x.bold;dtg()}},'মোটা'),el('button',{class:'chip'+(x.bg?' on':''),onclick:()=>{touch();x.bg=!x.bg;dtg()}},'ব্যাকগ্রাউন্ড'));dtg();
+  openSheet('টেক্সট',el('div',{class:'field'},ta),
+    slider('আকার',3,20,.5,x.size,v=>v.toFixed(1),v=>x.size=v),
+    el('div',{class:'field'},el('span',{class:'k'},'রঙ'),sw),tg,
+    slider('শুরু',0,Math.max(S.total,.5),.1,x.start,v=>v.toFixed(1)+'s',v=>{x.start=v;posTL()}),
+    slider('সময়কাল',.5,Math.max(S.total,1),.1,x.dur,v=>v.toFixed(1)+'s',v=>{x.dur=v;posTL()}),
+    el('p',{class:'note'},'টেক্সটের জায়গা বদলাতে প্রিভিউয়ে আঙুল টেনে সরান।'))}
+
+/* ---------- text dragging on preview ---------- */
+let dragText=false;
+pcv.addEventListener('pointerdown',e=>{
+  if(S.kind==='text'){dragText=true;pcv.setPointerCapture(e.pointerId);moveText(e);touch()}
+  else if(S.clips.length)togglePlay()});
+pcv.addEventListener('pointermove',e=>{if(dragText)moveText(e)});
+pcv.addEventListener('pointerup',()=>dragText=false);pcv.addEventListener('pointercancel',()=>dragText=false);
+function moveText(e){const r=pcv.getBoundingClientRect();S.sel.x=clamp((e.clientX-r.left)/r.width,.02,.98);S.sel.y=clamp((e.clientY-r.top)/r.height,.03,.97)}
+
+/* ---------- export ---------- */
+function pickMime(){const c=['video/mp4;codecs="avc1.640033,mp4a.40.2"','video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  return c.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||''}
+function openExport(){
+  if(S.exporting)return;if(!S.clips.length){toast('আগে মিডিয়া যোগ করুন');return}
+  if(S.playing){S.playing=false;updPlay()}
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast('এই ব্রাউজারে এক্সপোর্ট চলবে না। Chrome ব্যবহার করুন।');return}
+  S.sel=null;S.kind=null;renderTL();renderTools();
+  const info=el('p',{class:'note'}),upd=()=>{const[w,h]=dimsShort(RES[S.res].short,S.ratio);
+    info.textContent=w+'×'+h+' · '+S.fps+'fps · সময় লাগবে ভিডিওর সমান, প্রায় '+fmt(S.total)+'। এক্সপোর্টের সময় স্ক্রিন চালু রেখে অ্যাপে থাকুন।'+(S.res==='4k'?' 4K ফোনের শক্তির ওপর নির্ভর করে, না হলে 1080p নিন।':'')};
+  const r=chips(Object.entries(RES).map(([k,v])=>[k,v.label]),S.res,k=>{S.res=k;upd()});
+  const f=chips([[30,'30 fps'],[60,'60 fps']],S.fps,k=>{S.fps=k;upd()});upd();
+  openSheet('এক্সপোর্ট',el('div',{class:'field'},el('span',{class:'k'},'কোয়ালিটি'),r),el('div',{class:'field'},el('span',{class:'k'},'ফ্রেম রেট'),f),info,
+    el('button',{class:'btn accent',onclick:startExport},'এক্সপোর্ট শুরু করুন'))}
+let ex=null;
+async function startExport(){
+  ensureAC();try{await AC.resume()}catch(e){}
+  const[W,H]=dimsShort(RES[S.res].short,S.ratio);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const ctx=cv.getContext('2d',{alpha:false});
+  const stream=cv.captureStream(S.fps),dest=AC.createMediaStreamDestination();
+  const nodes=mediaList.filter(m=>m.gain).map(m=>m.gain);if(S.music)nodes.push(S.music.gain);
+  nodes.forEach(n=>n.connect(dest));dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  const mime=pickMime();let rec;
+  try{rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:RES[S.res].br*(S.fps===60?1.5:1)})}
+  catch(e){nodes.forEach(n=>{try{n.disconnect(dest)}catch(_){}});toast('এই রেজোলিউশনে এক্সপোর্ট করা যাচ্ছে না। ছোট কোয়ালিটি বেছে নিন।');return}
+  const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  ex={rec,chunks,nodes,dest,mime:rec.mimeType||mime||'video/webm',cancelled:false};
+  try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
+  S.exporting=true;S.exCtx=ctx;S.exW=W;S.exH=H;S.t=0;activeClip=null;setScroll(0);renderTools();
+  openSheet('এক্সপোর্ট হচ্ছে…',el('div',{class:'bar'},el('i',{id:'expBar'})),el('p',{class:'note'},'',el('b',{id:'expPct'},'0%'),' · স্ক্রিন চালু রাখুন, অ্যাপ বদলাবেন না।'),
+    el('button',{class:'btn danger',onclick:cancelExport},'বাতিল'));
+  sheet.querySelector('.sh-head .icon-btn').hidden=true;
+  syncMedia();await sleep(500);
+  rec.start(1000);S.playing=true;updPlay()}
+function endExport(){
+  if(!ex||ex.ending)return;ex.ending=true;S.playing=false;
+  const e=ex;
+  setTimeout(()=>{e.rec.onstop=()=>finishExport(e);try{e.rec.stop()}catch(_){finishExport(e)}},350)}
+function cancelExport(){if(!ex)return;ex.cancelled=true;ex.ending=true;S.playing=false;const e=ex;e.rec.onstop=()=>finishExport(e);try{e.rec.stop()}catch(_){finishExport(e)}}
+function finishExport(e){
+  if(ex!==e)return;ex=null;e.nodes.forEach(n=>{try{n.disconnect(e.dest)}catch(_){}});
+  S.exporting=false;S.exCtx=null;S.playing=false;updPlay();try{wake?.release()}catch(_){}wake=null;
+  for(const m of mediaList)if(m.kind==='video')m.el.pause();if(S.music)S.music.el.pause();
+  renderTools();
+  if(e.cancelled){closeSheet();toast('এক্সপোর্ট বাতিল');return}
+  const blob=new Blob(e.chunks,{type:e.mime.split(';')[0]});
+  if(blob.size<1000){closeSheet();toast('এক্সপোর্ট ব্যর্থ। কম কোয়ালিটিতে আবার চেষ্টা করুন।');return}
+  const ext=e.mime.includes('mp4')?'mp4':'webm',d=new Date(),p=n=>String(n).padStart(2,'0');
+  const name='reelcut-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.'+ext;
+  const url=URL.createObjectURL(blob),v=el('video',{class:'res',controls:true,playsinline:true});v.src=url;
+  openSheet('তৈরি হয়েছে',v,el('p',{class:'note'},name+' · '+(blob.size/1048576).toFixed(1)+' MB'),
+    el('button',{class:'btn accent',onclick:()=>saveFile(blob,name)},'ফোনে সেভ করুন'))}
+async function saveFile(blob,name){
+  try{const cap=window.Capacitor;
+    if(cap&&cap.isNativePlatform&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.Filesystem){
+      const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(blob)});
+      await cap.Plugins.Filesystem.writeFile({path:'Reelcut/'+name,data:b64,directory:'DOCUMENTS',recursive:true});
+      toast('সেভ হয়েছে: Documents/Reelcut/'+name);return}}catch(e){toast('সেভ করা যায়নি: '+(e&&e.message||e));return}
+  try{const d=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(d){await d.save({filename:name,data:blob});toast('সেভ হয়েছে');return}}
+  catch(e){if(e&&e.code==='declined')return}
+  const a=el('a',{href:URL.createObjectURL(blob),download:name});document.body.append(a);a.click();a.remove();toast('ডাউনলোড শুরু হয়েছে')}
+
+/* ---------- wiring ---------- */
+$('#playBtn').append(icon(PLAY,'f'));$('#undoBtn').append(icon('undo'));$('#zoomIn').append(icon('zin'));$('#zoomOut').append(icon('zout'));
+$('#undoBtn').addEventListener('click',undo);$('#playBtn').addEventListener('click',togglePlay);
+$('#zoomIn').addEventListener('click',()=>zoom(1.4));$('#zoomOut').addEventListener('click',()=>zoom(1/1.4));
+$('#exportBtn').addEventListener('click',openExport);
+$('#emptyAdd').addEventListener('click',()=>$('#fMedia').click());$('#emptySample').addEventListener('click',addSamples);
+$('#fMedia').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';addFiles(f)});
+$('#fMusic').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)addMusic(f)});
+document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input'))return;if(e.code==='Space'){e.preventDefault();togglePlay()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.playing&&!S.exporting){S.playing=false;updPlay()}});
+addEventListener('beforeunload',e=>{if(S.clips.length){e.preventDefault();e.returnValue=''}});
+window.__reelcut={S,addFiles,addSamples,splitAt,select,openExport,startExport};
+setupCanvas();full();requestAnimationFrame(frame);
+})();
+</script>
+
+<script>if('serviceWorker' in navigator&&location.protocol!=='file:'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body></html>

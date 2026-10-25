@@ -1,0 +1,6 @@
+{
+  "name": "reelcut-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reelcut video editor, Android wrapper"
+}

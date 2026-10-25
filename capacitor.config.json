@@ -1,0 +1,6 @@
+{
+  "appId": "com.reelcut.app",
+  "appName": "Reelcut",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}

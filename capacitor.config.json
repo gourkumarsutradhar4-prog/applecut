@@ -1,6 +1,5 @@
 {
-  "appId": "com.applecut.app",
-  "appName": "Applecut",
-  "webDir": "www",
-  "server": { "androidScheme": "https" }
+  "appId": "com.gour.editor",
+  "appName": "গৌর এডিটর",
+  "webDir": "www"
 }

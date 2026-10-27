@@ -1,6 +1,6 @@
 {
- "name": "Reelcut ভিডিও এডিটর",
- "short_name": "Reelcut",
+ "name": "applecut ভিডিও এডিটর",
+ "short_name": "Applelcut",
  "start_url": "./index.html",
  "scope": "./",
  "display": "standalone",

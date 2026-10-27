@@ -1,6 +1,6 @@
 {
-  "appId": "com.reelcut.app",
-  "appName": "Reelcut",
+  "appId": "com.applecut.app",
+  "appName": "Applecut",
   "webDir": "www",
   "server": { "androidScheme": "https" }
 }

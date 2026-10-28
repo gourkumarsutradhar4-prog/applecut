@@ -1,4 +1,4 @@
-name: Build Gour Editor APK
+name: Build Plumora-pro APK
 on:
   push:
     branches: [ main ]
@@ -23,5 +23,5 @@ jobs:
         run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Gour-Editor-APK
+          name: Plumora-pro-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk

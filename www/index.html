@@ -1746,7 +1746,32 @@ $('#emptyDraft').hidden=true;
 try{showHome('edit')}catch(e){window.__dbg&&window.__dbg('showHome: '+(e.stack||e))}
 window.__boot='ok';
 
-})();</script>
+})();// PLUMORA - UI te 1000 ta button add korbe
+setTimeout(()=>{
+  // Video effect er container khuje ber kora
+  let panel = document.body.innerHTML;
+  if(panel.includes('Video effect')){
+    let btnArea = document.querySelectorAll('button');
+    let lastBtn = null;
+    btnArea.forEach(b=>{ if(b.innerText=='Flash' || b.innerText=='flash') lastBtn = b; });
+    
+    if(lastBtn){
+      let wrap = lastBtn.parentElement;
+      Object.keys(myEffects).forEach(name=>{
+        let nb = document.createElement('button');
+        nb.innerText = name.replace('my_','').replace(/_/g,' ');
+        nb.style.cssText = "margin:3px;padding:5px 10px;border-radius:15px;background:#2a2f3a;color:#fff;border:1px solid #444";
+        nb.onclick = ()=>{ 
+          console.log("Apply:", name);
+          // effect apply logic
+          S.effect = name; // apnar editor e effect set
+        };
+        wrap.appendChild(nb);
+      });
+      console.log("1000 Buttons Added");
+    }
+  }
+}, 2000);</script>
 </body>
 </html>
 
